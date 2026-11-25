@@ -1,0 +1,312 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PD Token Game</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column built for a phone held after scanning the poster QR; the Petri net is the hero. */
+:root{
+  --bg:#f7f5f4; --surface:#ffffff; --fg:#1d1a19; --muted:#6b6461; --line:#d9d3d0;
+  --accent:#990000; --accent-soft:#f3e3e3; --token:#1d1a19; --enabled:#990000;
+  --missing:#d1242f; --remain:#c98a00; --ok:#2f7d4f;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171413; --surface:#211d1c; --fg:#f2eeec; --muted:#a89f9b; --line:#3a3432;
+  --accent:#e0575c; --accent-soft:#3a2224; --token:#f2eeec; --enabled:#e0575c;
+  --missing:#ff6b6b; --remain:#f0b429; --ok:#5cc28a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171413; --surface:#211d1c; --fg:#f2eeec; --muted:#a89f9b; --line:#3a3432;
+  --accent:#e0575c; --accent-soft:#3a2224; --token:#f2eeec; --enabled:#e0575c;
+  --missing:#ff6b6b; --remain:#f0b429; --ok:#5cc28a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:460px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;display:flex;flex-direction:column;gap:16px}
+.kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-family:var(--display);font-size:28px;line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lead{color:var(--muted);margin:0}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{font:600 14px var(--body);border:0;border-radius:9px;padding:10px 8px;background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff}
+.tabs button:focus-visible,.btn:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.hint{font-size:14px;margin:0 0 6px;min-height:42px}
+.hint b{color:var(--accent)}
+svg{display:block;width:100%;height:auto;max-width:100%}
+.place{fill:var(--surface);stroke:var(--fg);stroke-width:1.6}
+.place.end{stroke-width:3}
+.arc{stroke:var(--muted);stroke-width:1.6;fill:none}
+.tr rect{fill:var(--surface);stroke:var(--line);stroke-width:1.6;rx:6}
+.tr text{font:600 12.5px var(--body);fill:var(--muted);text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.tr.on rect{fill:var(--accent-soft);stroke:var(--enabled);stroke-width:2.4}
+.tr.on text{fill:var(--fg)}
+.tr.on{cursor:pointer}
+.tr.fired rect{stroke:var(--fg)}
+.tr.flash rect{fill:var(--accent);}
+.tr.flash text{fill:#fff}
+.tok{fill:var(--token)}
+.tok.miss{fill:var(--missing)}
+.tok.rem{fill:var(--remain)}
+.badge{font:700 11px var(--body)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{font:600 14px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:10px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chip{text-align:left;font:500 14px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:10px 12px;cursor:pointer}
+.chip small{display:block;color:var(--muted);font-size:12.5px}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.trace{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0;padding:0;list-style:none}
+.trace li{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.trace li.done{color:var(--fg);border-color:var(--fg)}
+.trace li.bad{color:var(--missing);border-color:var(--missing)}
+.trace li.skip{text-decoration:line-through;color:var(--remain);border-color:var(--remain)}
+.trace li.now{background:var(--accent);border-color:var(--accent);color:#fff}
+.score{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-variant-numeric:tabular-nums}
+.score div{background:var(--bg);border-radius:8px;padding:6px;text-align:center}
+.score b{display:block;font:700 18px var(--display)}
+.score span{font-size:11px;color:var(--muted)}
+.fit{margin-top:8px;font-size:14px}
+.fit b{font:700 22px var(--display)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.fact b{font:700 26px var(--display);color:var(--accent);display:block;line-height:1.1}
+.fact span{font-size:12.5px;color:var(--muted)}
+.clock{margin-top:12px;font-variant-numeric:tabular-nums}
+.clock-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.clock-top b{font:700 22px var(--display);color:var(--fg)}
+.clock-top b.over{color:var(--accent)}
+.bar{position:relative;height:12px;border-radius:6px;background:var(--bg);border:1px solid var(--line);margin-top:6px;overflow:hidden}
+#bar-fill{height:100%;width:0;background:var(--fg);transition:width .4s ease}
+#bar-fill.over{background:var(--accent)}
+.goal{position:absolute;top:-2px;bottom:-2px;left:66.67%;width:2px;background:var(--accent)}
+.clock-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px}
+.goal-lbl{position:relative;left:6%;color:var(--accent);font-weight:600}
+.note{font-size:12px;color:var(--muted);margin:6px 0 0}
+.switch{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--accent)}
+.tr.rule{cursor:pointer}
+.tr.rule rect{stroke-dasharray:4 3;stroke:var(--muted)}
+.tr.rule text{fill:var(--fg)}
+.pick{font-size:13px;color:var(--muted);margin:0 0 8px}
+.chip.rand{border-style:dashed}
+h2{font-family:var(--display);font-size:18px;margin:6px 0 0}
+footer{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker"> Group 7 · Novo Nordisk × Celonis</div>
+    <h1>Can you close a protocol deviation the agreed way?</h1>
+    <p class="lead">This is Novo Nordisk's process for a protocol deviation (PD), drawn as a Petri net. The black dot is the case. Tap a red step to move it forward.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-play" aria-selected="true">Play it yourself</button>
+    <button role="tab" id="tab-replay" aria-selected="false">Replay a real PD</button>
+  </div>
+
+  <section class="panel">
+    <p class="hint" id="hint"></p>
+    <svg id="net" viewBox="0 0 360 850" role="img" aria-label="Petri net of the agreed PD process"></svg>
+    <div class="legend" id="legend" hidden>
+      <span><i style="background:var(--token)"></i>token</span>
+      <span><i style="background:var(--missing)"></i>missing token (step done too early)</span>
+      <span><i style="background:var(--remain)"></i>left behind (step never done)</span>
+    </div>
+  </section>
+
+  <section class="panel" id="play-ctl">
+    <div class="row">
+      <button class="btn" id="undo">Undo</button>
+      <button class="btn" id="reset">Start again</button>
+      <span id="steps" style="margin-left:auto;color:var(--muted);font-size:13px"></span>
+    </div>
+    <div class="clock">
+      <div class="clock-top"><span>Waiting so far</span><b id="days">0.0 days</b></div>
+      <div class="bar" aria-hidden="true"><div id="bar-fill"></div><div class="goal"></div></div>
+      <div class="clock-foot"><span>0 d</span><span class="goal-lbl">30-day goal</span><span>45 d</span></div>
+      <p class="note">Median waits between steps from our Disco map (6.1 days before Create, 10.1 days per review round, 5.3 days before Implement). Real PDs also wait outside these steps, which is why the overall median is 29 days.</p>
+    </div>
+    <label class="switch"><input type="checkbox" id="break"><span>Break the rules: let me tap any step</span></label>
+    <ul class="trace" id="play-trace"></ul>
+  </section>
+
+  <section class="panel" id="replay-ctl" hidden>
+    <p class="pick">Pick a PD to replay. Each one runs through the same model, which is the point: the model is the yardstick.</p>
+    <div class="chips" id="variants"></div>
+    <ul class="trace" id="rp-trace"></ul>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="next">Next event</button>
+      <button class="btn" id="auto">Play all</button>
+      <button class="btn" id="rp-reset">Restart</button>
+    </div>
+    <div class="score" id="score">
+      <div><b id="s-p">0</b><span>produced</span></div>
+      <div><b id="s-c">0</b><span>consumed</span></div>
+      <div><b id="s-m" style="color:var(--missing)">0</b><span>missing</span></div>
+      <div><b id="s-r" style="color:var(--remain)">0</b><span>left behind</span></div>
+    </div>
+    <p class="fit" id="fit"></p>
+  </section>
+
+  <section>
+    <h2>What 98,506 real PDs did</h2>
+    <div class="facts" style="margin-top:8px">
+      <div class="fact"><b>19%</b><span>follow this process from start to end</span></div>
+      <div class="fact"><b>60%</b><span>skip the Review block. Almost all of them are minor PDs</span></div>
+      <div class="fact"><b>14%</b><span>are reopened after Finalise, all by the system</span></div>
+      <div class="fact"><b>50.5%</b><span>close within the 30-day goal</span></div>
+    </div>
+  </section>
+
+  
+</div>
+
+<script>
+(()=>{
+const W=150,H=34;
+const P={p0:[180,26],p1:[180,128],p2:[180,230],p3:[180,346],p4:[180,448],p5:[180,560],p6:[180,676],p7:[180,794]};
+const T={
+ "Identify":{x:180,y:77,in:"p0",out:"p1"},
+ "Create":{x:180,y:179,in:"p1",out:"p2"},
+ "Correction Date":{x:95,y:288,in:"p2",out:"p3",w:150},
+ "Correction Not Possible":{x:265,y:288,in:"p2",out:"p3",w:150,label:"Corr. Not Possible"},
+ "Corrective Action":{x:180,y:397,in:"p3",out:"p4"},
+ "Review":{x:180,y:504,in:"p4",out:"p5"},
+ "Change PD":{x:312,y:504,in:"p5",out:"p4",w:92},
+ "Implement":{x:180,y:618,in:"p5",out:"p6"},
+ "Finalise":{x:180,y:735,in:"p6",out:"p7"}
+};
+const svg=document.getElementById('net'),NS='http://www.w3.org/2000/svg';
+const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+const defs=el('defs',{});const mk=el('marker',{id:'ah',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs);
+el('path',{d:'M0 0L10 5L0 10z',fill:'var(--muted)'},mk);
+const R=15;
+function arcPT(p,t,dir){ // dir: 'pt' place->transition, 'tp'
+  const [px,py]=P[p],tw=(T[t].w||W)/2;
+  let tx=T[t].x,ty=T[t].y;
+  if(t==="Change PD"){ // loop
+    if(dir==='pt') return `M${px+R} ${py-4} C ${px+70} ${py-6}, ${tx} ${ty+40}, ${tx} ${ty+H/2+2}`;
+    return `M${tx} ${ty-H/2} C ${tx} ${ty-40}, ${px+70} ${py+6}, ${px+R+2} ${py+2}`;
+  }
+  if(dir==='pt'){const y2=ty-H/2;const dx=tx-px,dy=y2-py,L=Math.hypot(dx,dy);return `M${px+dx/L*R} ${py+dy/L*R} L${tx} ${y2-1}`}
+  const y1=ty+H/2;const dx=px-tx,dy=py-y1,L=Math.hypot(dx,dy);return `M${tx} ${y1} L${px-dx/L*(R+2)} ${py-dy/L*(R+2)}`;
+}
+for(const t in T){el('path',{d:arcPT(T[t].in,t,'pt'),class:'arc','marker-end':'url(#ah)'});el('path',{d:arcPT(T[t].out,t,'tp'),class:'arc','marker-end':'url(#ah)'})}
+const placeEls={};for(const p in P){placeEls[p]=el('circle',{cx:P[p][0],cy:P[p][1],r:R,class:'place'+(p==='p7'?' end':'')})}
+el('text',{x:205,y:30,class:'badge',fill:'var(--muted)'}).textContent='start';
+el('text',{x:205,y:798,class:'badge',fill:'var(--muted)'}).textContent='end';
+const trEls={};
+for(const t in T){const g=el('g',{class:'tr',tabindex:'-1','data-t':t});const w=T[t].w||W;
+ el('rect',{x:T[t].x-w/2,y:T[t].y-H/2,width:w,height:H,rx:6},g);el('text',{x:T[t].x,y:T[t].y+1},g).textContent=T[t].label||t;
+ g.addEventListener('click',()=>onTap(t));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onTap(t)}});trEls[t]=g}
+const tokLayer=el('g',{});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- state ----------
+let mode='play', M={}, missingAt={}, hist=[], busy=false;
+function drawTokens(){tokLayer.innerHTML='';
+ for(const p in P){const n=M[p]||0,m=missingAt[p]||0;const [x,y]=P[p];
+  const list=[];for(let i=0;i<n;i++)list.push(p==='p7'&&i===0&&mode==='play'?'':remainCls(p));for(let i=0;i<m;i++)list.push('miss');
+  list.forEach((c,i)=>{const off=(i-(list.length-1)/2)*11;el('circle',{cx:x+off,cy:y,r:list.length>1?5:6.5,class:'tok '+c},tokLayer)})}}
+let showRemain=false;function remainCls(p){return showRemain?'rem':''}
+function enabled(t){return (M[T[t].in]||0)>0}
+let breakMode=false,days=0;
+const WAIT={"Create":6.1,"Change PD":10.1,"Implement":5.3};
+function paint(){for(const t in T){const play=mode==='play'&&!busy&&(M.p7||0)===0;const on=play&&enabled(t),rule=play&&breakMode&&!enabled(t),tap=on||rule;
+ trEls[t].classList.toggle('on',on);trEls[t].classList.toggle('rule',rule);trEls[t].setAttribute('tabindex',tap?'0':'-1');trEls[t].setAttribute('role',tap?'button':'img');trEls[t].setAttribute('aria-label',t+(on?' (can fire)':rule?' (breaks the rules)':''))}drawTokens()}
+function fly(from,to,cls){return new Promise(res=>{if(reduce){res();return}
+ const [x1,y1]=P[from],[x2,y2]=P[to];const c=el('circle',{cx:x1,cy:y1,r:6.5,class:'tok '+(cls||'')},tokLayer);const t0=performance.now(),D=420;
+ (function f(now){const k=Math.min(1,(now-t0)/D),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;c.setAttribute('cx',x1+(x2-x1)*e);c.setAttribute('cy',y1+(y2-y1)*e);k<1?requestAnimationFrame(f):res()})(t0)})}
+function flash(t){trEls[t].classList.add('flash');setTimeout(()=>trEls[t].classList.remove('flash'),380)}
+
+// ---------- play mode ----------
+const hint=document.getElementById('hint'),steps=document.getElementById('steps'),ptrace=document.getElementById('play-trace');
+let fired=[];
+let firedBad=[];
+function playReset(){M={p0:1};missingAt={};fired=[];firedBad=[];hist=[];days=0;showRemain=false;playHint();renderPlay()}
+function renderPlay(){paint();steps.textContent=fired.length+' steps';
+ ptrace.innerHTML=fired.map((t,i)=>`<li class="${firedBad[i]?'bad':'done'}">${t}</li>`).join('');document.getElementById('undo').disabled=!hist.length;
+ const over=days>30;const d=document.getElementById('days');d.textContent=days.toFixed(1)+' days';d.classList.toggle('over',over);
+ const f=document.getElementById('bar-fill');f.style.width=Math.min(100,days/45*100)+'%';f.classList.toggle('over',over)}
+function sumObj(o,skip){let s=0;for(const k in o)if(k!==skip)s+=o[k]||0;return s}
+function playHint(){
+ if((M.p7||0)>0){const rv=fired.filter(t=>t==='Review').length,miss=sumObj(missingAt),left=sumObj(M,'p7')+Math.max(0,(M.p7||0)-1);
+  const time=` ${days.toFixed(1)} days of waiting${days>30?', past the 30-day goal. Every review round adds about 10 days':''}.`;
+  if(miss||left){showRemain=true;hint.innerHTML=`<b>Closed, but not the agreed way:</b> ${miss} missing token${miss===1?'':'s'} and ${left} left behind. Token replay would score this PD below 1.0, like 81% of real PDs.${time}`}
+  else hint.innerHTML=`<b>Done in ${fired.length} steps.</b> This PD followed the agreed process${rv>1?`, with ${rv} review rounds`:''}. Only 19% of real PDs do.${time}`;return}
+ const on=Object.keys(T).filter(enabled);
+ const pre=breakMode?'Rule-breaking is on: dashed steps fire without a token and leave a red missing token. ':'';
+ if(on.length>1&&on.includes('Change PD'))hint.innerHTML=pre+'Review is done. <b>Implement</b> the fix, or send it back with <b>Change PD</b> for another round.';
+ else if(on.length>1)hint.innerHTML=pre+'A choice: is a correction date possible? Pick <b>Correction Date</b> or <b>Correction Not Possible</b>.';
+ else if(on.length)hint.innerHTML=pre+`Tap <b>${on[0]}</b> to move the case on.`;
+ else hint.innerHTML=pre;
+}
+async function onTap(t){if(mode!=='play'||busy||(M.p7||0)>0)return;const ok=enabled(t);if(!ok&&!breakMode)return;busy=true;
+ hist.push({M:{...M},fired:[...fired],firedBad:[...firedBad],missingAt:{...missingAt},days});
+ const inp=T[t].in;if(ok)M[inp]--;else missingAt[inp]=(missingAt[inp]||0)+1;
+ paint();flash(t);await fly(inp,T[t].out,ok?'':'miss');M[T[t].out]=(M[T[t].out]||0)+1;fired.push(t);firedBad.push(!ok);days+=WAIT[t]||0;busy=false;playHint();renderPlay()}
+document.getElementById('undo').onclick=()=>{const h=hist.pop();if(!h)return;M=h.M;fired=h.fired;firedBad=h.firedBad;missingAt=h.missingAt;days=h.days;showRemain=false;playHint();renderPlay()};
+document.getElementById('break').onchange=e=>{breakMode=e.target.checked;document.getElementById('legend').hidden=!breakMode;playReset()};
+document.getElementById('reset').onclick=playReset;
+
+// ---------- replay mode ----------
+const V=[
+ {name:'The shortcut',sub:'Skips Corrective Action, Review and Implement. About 60% of PDs leave out this block.',trace:['Identify','Create','Correction Date','Finalise'],
+  note:'Finalise fires before Implement put a token in its input, so a token is missing. The token waiting for Corrective Action is never used. Novo Nordisk says Review is mandatory, so this is a real deviation, not a variation.'},
+ {name:'Two review rounds',sub:'Fits the model. But PDs with 2+ review cycles take 64 days in median, against 17.',trace:['Identify','Create','Correction Not Possible','Corrective Action','Review','Change PD','Review','Implement','Finalise'],
+  note:'Every step finds its token. The model allows the loop, so this PD fits perfectly. It is slow, not wrong.'},
+ {name:'Reopened by the system',sub:'14% of PDs are reopened. 74% of those close again within a day.',trace:['Identify','Create','Correction Date','Corrective Action','Review','Implement','Finalise','Reopen','Finalise'],
+  note:'Reopen is not in the model at all, so replay skips it. The second Finalise has no token to consume: one missing, and one extra token ends up in the end place.'}
+];
+const AB={I:'Identify',C:'Create',D:'Correction Date',N:'Correction Not Possible',A:'Corrective Action',R:'Review',P:'Change PD',M:'Implement',F:'Finalise',O:'Reopen'};
+const REAL=[["ICDF",30484,37.4],["ICNF",14262,14.2],["ICDARMF",5902,19.5],["ICNARMF",4170,14.6],["ICDARPRMF",3514,42.4],["ICDFOF",3481,48.7],["ICF",2519,35.5],["ICNARPRMF",2297,33.6],["ICNFOF",1740,25.8],["ICDARPRPRMF",1229,72.4],["ICNDF",1066,19.4],["ICDARMPRMF",767,61.2],["ICNARPRPRMF",743,62.7],["ICADRMF",647,56.7],["ICDFOFOF",637,67.7],["ICFOF",520,46.0],["ICDNF",500,56.9],["ICDFODF",443,91.3],["ICARPDRMF",421,81.3],["ICDARPRMPRMF",414,96.5],["ICADRPRMF",409,83.3],["ICDARPRPRPRMF",378,93.0],["ICNARMPRMF",371,44.7],["ICARMPDRMF",346,78.4],["ICNFOFOF",338,54.2],["ICRMF",336,17.7],["ICDARPDRMF",293,54.8],["ICDARF",283,32.6],["ICDARPF",280,35.9],["ICNDARMF",258,15.5],["ICNARF",239,21.5],["ICDAF",236,38.7],["ICNARPRPRPRMF",222,75.6],["ICDRMF",193,8.9],["ICNDFD",185,27.5],["ICNARMFOF",180,305.7],["ICARPDRPRMF",169,112.4],["ICDFOFOFOF",164,103.6],["ICDARMFORMF",157,78.8],["ICDARMFOF",155,352.4]];const TOT=98506;let lastDraw=-1;
+const RSUB='Picked from the 40 most common sequences in the log, weighted by how often each one happens. Tap to draw one.';
+V.push({name:'Draw a random real PD',sub:RSUB,trace:[],note:'',rand:true});
+function draw(){const sum=REAL.reduce((a,r)=>a+r[1],0);let k,x;do{x=Math.random()*sum;k=0;while(x>=REAL[k][1]){x-=REAL[k][1];k++}}while(k===lastDraw&&REAL.length>1);lastDraw=k;
+ const [code,n,med]=REAL[k],v=V[V.length-1],pct=n/TOT*100;v.trace=[...code].map(c=>AB[c]);
+ const rv=v.trace.filter(t=>t==='Review').length,ro=v.trace.filter(t=>t==='Reopen').length;
+ v.sub=`${pct>=1?pct.toFixed(1):pct.toFixed(2)}% of PDs (${n.toLocaleString('en')}) did exactly this. Median ${med} days to close${med>30?', past the 30-day goal':''}. Tap again for another.`;
+ v.note=`${rv===0?'No review at all.':rv===1?'One review round.':rv+' review rounds.'}${ro?` Reopened ${ro===1?'once':ro+' times'} by the system.`:''} Median time for PDs like this: ${med} days.`;
+ document.querySelector('#v'+(V.length-1)).innerHTML=`${v.name}<small>${v.sub}</small>`}
+let vi=0,pos=0,cnt={p:0,c:0,m:0,r:0},timer=null,traceState=[];
+const vbox=document.getElementById('variants');
+V.forEach((v,i)=>{const b=document.createElement('button');b.className='chip';b.id='v'+i;b.innerHTML=`${v.name}<small>${v.sub}</small>`;if(v.rand)b.classList.add('rand');b.onclick=()=>{vi=i;if(v.rand)draw();rpReset()};vbox.appendChild(b)});
+function rpReset(){if(!V[vi].rand){const r=V[V.length-1];r.sub=RSUB;document.querySelector('#v'+(V.length-1)).innerHTML=`${r.name}<small>${r.sub}</small>`}stopAuto();M={p0:1};missingAt={};pos=0;cnt={p:1,c:0,m:0,r:0};showRemain=false;traceState=V[vi].trace.map(()=>'' );
+ [...vbox.children].forEach((b,i)=>b.setAttribute('aria-pressed',i===vi));hint.innerHTML=V[vi].rand?`Replaying a real PD sequence, event by event. Each step needs a token in its input place.`:`Replaying <b>${V[vi].name.toLowerCase()}</b>, event by event. Each step needs a token in its input place.`;renderRp()}
+function renderRp(){paint();const tr=V[vi].trace;
+ document.getElementById('rp-trace').innerHTML=tr.map((t,i)=>`<li class="${i===pos&&pos<tr.length?'now':traceState[i]}">${t}</li>`).join('');
+ for(const k of['p','c','m','r'])document.getElementById('s-'+k).textContent=cnt[k];
+ const done=pos>tr.length;document.getElementById('next').disabled=done;document.getElementById('auto').disabled=done;
+ const f=document.getElementById('fit');
+ if(done){const v=.5*(1-cnt.m/cnt.c)+.5*(1-cnt.r/cnt.p);f.innerHTML=`Fitness <b>${v.toFixed(2)}</b> = ½(1 − ${cnt.m}/${cnt.c}) + ½(1 − ${cnt.r}/${cnt.p})<br><span style="color:var(--muted)">${V[vi].note}</span>`}else f.textContent=''}
+async function step(){const tr=V[vi].trace;if(busy||pos>tr.length)return;busy=true;
+ if(pos===tr.length){ // consume final token, count remaining
+  if((M.p7||0)>0){M.p7--;cnt.c++}else{cnt.m++;cnt.c++;missingAt.p7=(missingAt.p7||0)+1}
+  let r=0;for(const p in P)r+=M[p]||0;cnt.r=r;showRemain=true;pos++;busy=false;
+  hint.innerHTML=r||cnt.m?`End of the case. <b>${cnt.m} missing</b> and <b>${r} left behind</b>.`:'End of the case. <b>No missing or leftover tokens: a perfect fit.</b>';renderRp();return}
+ const t=tr[pos];
+ if(!T[t]){traceState[pos]='skip';hint.innerHTML=`<b>${t}</b> does not exist in the model. Token replay cannot fire it, so it is skipped.`;pos++;busy=false;renderRp();return}
+ const inp=T[t].in;flash(t);
+ if((M[inp]||0)>0){M[inp]--;cnt.c++;traceState[pos]='done';hint.innerHTML=`<b>${t}</b> finds a token and fires.`;paint();await fly(inp,T[t].out)}
+ else{cnt.m++;cnt.c++;missingAt[inp]=(missingAt[inp]||0)+1;traceState[pos]='bad';hint.innerHTML=`<b>${t}</b> has no token in its input. Replay adds a <b style="color:var(--missing)">missing token</b> to force it.`;paint();await new Promise(r=>setTimeout(r,reduce?0:450));await fly(inp,T[t].out,'miss')}
+ M[T[t].out]=(M[T[t].out]||0)+1;cnt.p++;pos++;busy=false;renderRp()}
+function stopAuto(){if(timer){clearInterval(timer);timer=null;document.getElementById('auto').textContent='Play all'}}
+document.getElementById('next').onclick=()=>{stopAuto();step()};
+document.getElementById('auto').onclick=()=>{if(timer){stopAuto();return}document.getElementById('auto').textContent='Pause';step();timer=setInterval(()=>{if(pos>V[vi].trace.length)stopAuto();else step()},reduce?300:900)};
+document.getElementById('rp-reset').onclick=rpReset;
+
+// ---------- tabs ----------
+function setMode(m){mode=m;stopAuto();document.getElementById('tab-play').setAttribute('aria-selected',m==='play');document.getElementById('tab-replay').setAttribute('aria-selected',m==='replay');
+ document.getElementById('play-ctl').hidden=m!=='play';document.getElementById('replay-ctl').hidden=m!=='replay';document.getElementById('legend').hidden=!(m==='replay'||breakMode);
+ if(m==='play')playReset();else rpReset()}
+document.getElementById('tab-play').onclick=()=>setMode('play');
+document.getElementById('tab-replay').onclick=()=>setMode('replay');
+playReset();
+})();
+</script>
+
+</body></html>
